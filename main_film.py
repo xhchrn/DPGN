@@ -490,6 +490,15 @@ def main():
     if config['backbone'] == 'resnet12':
         enc_module = ResNet12(emb_size=config['emb_size'], cifar_flag=cifar_flag)
         print('Backbone: ResNet12')
+    if config['backbone'] == 'resnet12_film':
+        enc_module = ResNet12_FiLM_Encoder(
+            emb_size=config['emb_size'],
+            cifar_flag=cifar_flag,
+            film_indim=config['emb_size'] * 2,
+            film_normalize=False,
+            dual_BN=True
+        )
+        print('Backbone: ResNet12')
     elif config['backbone'] == 'resnet18':
         enc_module = ResNet18(emb_size=config['emb_size'])
         print('Backbone: ResNet18')

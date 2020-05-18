@@ -2,6 +2,7 @@ import os
 import logging
 import torch
 import shutil
+from backbone_film import ResNet12_FiLM_Encoder
 
 
 def allocate_tensors():
@@ -181,7 +182,7 @@ def initialize_nodes_edges(batch, num_supports, tensors, batch_size, num_queries
            node_feature_gd, edge_feature_gp, edge_feature_gd
 
 
-def backbone_two_stage_initialization(full_data, encoder):
+def backbone_two_stage_initialization(full_data, support_label, encoder):
     """
     encode raw data by backbone network
     :param full_data: raw data
@@ -189,19 +190,36 @@ def backbone_two_stage_initialization(full_data, encoder):
     :return: last layer logits from backbone network
              second last layer logits from backbone network
     """
+    assert full_data.size(0) == support_label.size(0)
     # encode data
     last_layer_data_temp = []
     second_last_layer_data_temp = []
-    for data in full_data.chunk(full_data.size(1), dim=1):
+    for data, s_label in zip(full_data.chunk(full_data.size(0), dim=0),
+                             support_label.chunk(support_label.size(0), dim=0)):
         # the encode step
-        encoded_result = encoder(data.squeeze(1))
+        if isinstance(encoder, ResNet12_FiLM_Encoder):
+            encoded_result = encoder(data.squeeze(0), s_label.squeeze(0))
+        else:
+            encoded_result = encoder(data.squeeze(0))
         # prepare for two stage initialization of DPGN
         last_layer_data_temp.append(encoded_result[0])
         second_last_layer_data_temp.append(encoded_result[1])
     # last_layer_data: (batch_size, num_samples, embedding dimension)
-    last_layer_data = torch.stack(last_layer_data_temp, dim=1)
+    last_layer_data = torch.stack(last_layer_data_temp, dim=0)
     # second_last_layer_data: (batch_size, num_samples, embedding dimension)
-    second_last_layer_data = torch.stack(second_last_layer_data_temp, dim=1)
+    second_last_layer_data = torch.stack(second_last_layer_data_temp, dim=0)
+
+    # for data in full_data.chunk(full_data.size(1), dim=1):
+    #     # the encode step
+    #     encoded_result = encoder(data.squeeze(1))
+    #     # prepare for two stage initialization of DPGN
+    #     last_layer_data_temp.append(encoded_result[0])
+    #     second_last_layer_data_temp.append(encoded_result[1])
+    # # last_layer_data: (batch_size, num_samples, embedding dimension)
+    # last_layer_data = torch.stack(last_layer_data_temp, dim=1)
+    # # second_last_layer_data: (batch_size, num_samples, embedding dimension)
+    # second_last_layer_data = torch.stack(second_last_layer_data_temp, dim=1)
+
     return last_layer_data, second_last_layer_data
 
 
