@@ -203,7 +203,9 @@ class DPGNTrainer(object):
             self.enc_module.eval()
             self.gnn_module.eval()
 
-            last_layer_data, second_last_layer_data = backbone_two_stage_initialization(all_data, self.enc_module)
+            last_layer_data, second_last_layer_data = backbone_two_stage_initialization(
+                all_data, support_label, self.enc_module,
+                num_gpu=self.arg.num_gpu, film=True)
 
             # run the DPGN model
             point_similarity, _, _ = self.gnn_module(second_last_layer_data,
