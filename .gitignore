@@ -1,0 +1,8 @@
+# virtual environment
+.envs/
+
+# PyCharm files
+.idea/
+
+# Python cache
+**/*.pyc
