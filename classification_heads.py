@@ -750,7 +750,7 @@ def MetaOptNetHead_SVM_CS_BiP(query, support, support_labels, n_way, n_shot, C_r
 
 def MetaOptNetHead_SVM_CS_WNorm(
         query, support, support_labels, n_way, n_shot, C_reg=0.1,
-        double_precision=False, maxIter=15):
+        double_precision=False, maxIter=10):
     """
     Fits the support set with multi-class SVM and
     returns the classification score on the query set.
