@@ -192,21 +192,31 @@ def backbone_two_stage_initialization(full_data, support_label, encoder,
              second last layer logits from backbone network
     """
     assert full_data.size(0) == support_label.size(0)
-    print(full_data.size())
     # encode data
     last_layer_data_temp = []
     second_last_layer_data_temp = []
-
-    for data in full_data.chunk(full_data.size(1), dim=1):
+    for data, s_label in zip(full_data.chunk(full_data.size(0)//num_gpu, dim=0),
+                             support_label.chunk(support_label.size(0)//num_gpu, dim=0)):
         # the encode step
-        encoded_result = encoder(data.squeeze(1))
+        encoded_result = encoder(data, s_label)
         # prepare for two stage initialization of DPGN
         last_layer_data_temp.append(encoded_result[0])
         second_last_layer_data_temp.append(encoded_result[1])
     # last_layer_data: (batch_size, num_samples, embedding dimension)
-    last_layer_data = torch.stack(last_layer_data_temp, dim=1)
+    last_layer_data = torch.cat(last_layer_data_temp, dim=0)
     # second_last_layer_data: (batch_size, num_samples, embedding dimension)
-    second_last_layer_data = torch.stack(second_last_layer_data_temp, dim=1)
+    second_last_layer_data = torch.cat(second_last_layer_data_temp, dim=0)
+
+    # for data in full_data.chunk(full_data.size(1), dim=1):
+    #     # the encode step
+    #     encoded_result = encoder(data.squeeze(1))
+    #     # prepare for two stage initialization of DPGN
+    #     last_layer_data_temp.append(encoded_result[0])
+    #     second_last_layer_data_temp.append(encoded_result[1])
+    # # last_layer_data: (batch_size, num_samples, embedding dimension)
+    # last_layer_data = torch.stack(last_layer_data_temp, dim=1)
+    # # second_last_layer_data: (batch_size, num_samples, embedding dimension)
+    # second_last_layer_data = torch.stack(second_last_layer_data_temp, dim=1)
 
     return last_layer_data, second_last_layer_data
 

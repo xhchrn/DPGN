@@ -170,7 +170,7 @@ class ResNet12_FiLM(nn.Module):
     def __init__(self, emb_size, block=ResNet12Block_FiLM, cifar_flag=False,
                  film_indim=1, film_alpha=1, film_act=F.leaky_relu,
                  film_normalize=False, dual_BN=True):
-        super(ResNet12, self).__init__()
+        super(ResNet12_FiLM, self).__init__()
         cfg = [64, 128, 256, 512]
         # layers = [1, 1, 1, 1]
         iChannels = int(cfg[0])
@@ -291,6 +291,7 @@ class ResNet12_FiLM_Encoder(nn.Module):
     def __init__(self, emb_size, block=ResNet12Block_FiLM, cifar_flag=False,
                  film_indim=1, film_alpha=1, film_act=F.leaky_relu,
                  film_normalize=False, dual_BN=True):
+        super(ResNet12_FiLM_Encoder, self).__init__()
         self.resnet12 = ResNet12_FiLM(emb_size, block, cifar_flag,
                                       film_indim, film_alpha, film_act,
                                       film_normalize, dual_BN)
@@ -299,11 +300,15 @@ class ResNet12_FiLM_Encoder(nn.Module):
     def forward(self, x, support_label):
         # NOTE: backbone only take samples in one task at a time;
         #   refer to `utils.backbone_two_stage_initialization`
+        assert x.size(0) == 1 and support_label.size(0) == 1
+        x = x.squeeze(0)
+        support_label = support_label.squeeze(0)
         if x.size(0) == 30:
             n_way, n_shot, n_support = 5, 5, 25
         elif x.size(0) == 10:
             n_way, n_shot, n_support = 5, 1, 5
         else:
+            print(x.size())
             raise ValueError('current configuration not implemented')
         assert support_label.size(0) == n_support
 
@@ -312,14 +317,15 @@ class ResNet12_FiLM_Encoder(nn.Module):
 
         # first pass without task embedding
         support_encode = self.resnet12(support_data, None, None)
-        support_encode = torch.cat(support_encode, dim=1).detach()
+        support_encode = torch.cat(support_encode, dim=1)
         emb_task, _ = self.add_te_func(
             support_encode.unsqueeze(0), support_label.unsqueeze(0),
-            n_way, n_shot, prune_ratio=0.0
+            n_way, n_shot, 0.0
         )
 
         # second pass with task embedding
-        return self.resnet12(x, task_embedding=emb_task, n_expand=x.size(0))
+        encode_result = self.resnet12(x, task_embedding=emb_task, n_expand=x.size(0))
+        return [res.unsqueeze(0) for res in encode_result]
 
 
 class ResNet18(nn.Module):

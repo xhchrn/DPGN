@@ -1,7 +1,7 @@
 from backbone import ResNet12, ResNet18, WRN, ConvNet
 from backbone_film import ResNet12_FiLM_Encoder
 from dpgn import DPGN
-from utils import set_logging_config, adjust_learning_rate, save_checkpoint, allocate_tensors, preprocessing, \
+from utils_film import set_logging_config, adjust_learning_rate, save_checkpoint, allocate_tensors, preprocessing, \
     initialize_nodes_edges, backbone_two_stage_initialization, one_hot_encode
 from dataloader import MiniImagenet, TieredImagenet, Cifar, CUB200, DataLoader
 import torch
@@ -106,7 +106,8 @@ class DPGNTrainer(object):
             
             # use backbone encode image
             last_layer_data, second_last_layer_data = backbone_two_stage_initialization(
-                all_data, support_label, self.enc_module)
+                all_data, support_label, self.enc_module,
+                num_gpu=self.arg.num_gpu, film=True)
 
             # run the DPGN model
             point_similarity, node_similarity_l2, distribution_similarities = \
