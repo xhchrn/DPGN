@@ -115,7 +115,7 @@ class DPGNTrainer(object):
             support_last_layer = last_layer_data[:, :n_support, :]
             support_second_last_layer = second_last_layer_data[:, :n_support, :]
             support_features = torch.cat([support_last_layer, support_second_last_layer], dim=-1)
-            task_embedding = self.te_module(
+            task_embedding, _ = self.te_module(
                 support_features, support_label,
                 self.train_opt['num_ways'], self.train_opt['num_shots'], 0.0
             )
@@ -227,7 +227,7 @@ class DPGNTrainer(object):
             support_last_layer = last_layer_data[:, :n_support, :]
             support_second_last_layer = second_last_layer_data[:, :n_support, :]
             support_features = torch.cat([support_last_layer, support_second_last_layer], dim=-1)
-            task_embedding = self.te_module(
+            task_embedding, _ = self.te_module(
                 support_features, support_label,
                 self.train_opt['num_ways'], self.train_opt['num_shots'], 0.0
             )
