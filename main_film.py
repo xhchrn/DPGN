@@ -178,6 +178,7 @@ class DPGNTrainer(object):
                     'iteration': self.global_step,
                     'enc_module_state_dict': self.enc_module.state_dict(),
                     'gnn_module_state_dict': self.gnn_module.state_dict(),
+                    'te_module_state_dict': self.te_module.state_dict(),
                     'test_acc': self.test_acc,
                     'optimizer': self.optimizer.state_dict(),
                 }, is_best, os.path.join(self.arg.checkpoint_dir, self.arg.exp_name))
@@ -580,6 +581,7 @@ def main():
             best_step = best_checkpoint['iteration']
             enc_module.load_state_dict(best_checkpoint['enc_module_state_dict'])
             gnn_module.load_state_dict(best_checkpoint['gnn_module_state_dict'])
+            te_module.load_state_dict(best_checkpoint['te_module_state_dict'])
             logger.info('current best test accuracy is: {}, at step: {}'.format(best_checkpoint['test_acc'], best_step))
 
     dataset_train = dataset(root=args_opt.dataset_root, partition='train')
@@ -612,6 +614,7 @@ def main():
     # create trainer
     trainer = DPGNTrainer(enc_module=enc_module,
                           gnn_module=gnn_module,
+                          te_module=te_module,
                           data_loader=data_loader,
                           log=logger,
                           arg=args_opt,
