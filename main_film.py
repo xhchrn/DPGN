@@ -112,8 +112,8 @@ class DPGNTrainer(object):
             # with torch.no_grad():
             last_layer_data, second_last_layer_data = backbone_two_stage_initialization(
                 all_data, self.enc_module, task_embedding=None)
-            support_last_layer = last_layer_data[:n_support]
-            support_second_last_layer = second_last_layer_data[:n_support]
+            support_last_layer = last_layer_data[:, :n_support, :]
+            support_second_last_layer = second_last_layer_data[:, :n_support, :]
             support_features = torch.cat([support_last_layer, support_second_last_layer], dim=-1)
             task_embedding = self.te_module(
                 support_features, support_label,
@@ -224,8 +224,8 @@ class DPGNTrainer(object):
             #     num_gpu=self.arg.num_gpu, film=True)
             last_layer_data, second_last_layer_data = backbone_two_stage_initialization(
                 all_data, self.enc_module, task_embedding=None)
-            support_last_layer = last_layer_data[:n_support]
-            support_second_last_layer = second_last_layer_data[:n_support]
+            support_last_layer = last_layer_data[:, :n_support, :]
+            support_second_last_layer = second_last_layer_data[:, :n_support, :]
             support_features = torch.cat([support_last_layer, support_second_last_layer], dim=-1)
             task_embedding = self.te_module(
                 support_features, support_label,
