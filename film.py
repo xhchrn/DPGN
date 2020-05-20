@@ -41,7 +41,8 @@ class FiLM_Layer(nn.Module):
         # print(_input.abs().mean())
         if _task_emb is not None:
             # print('FiLM forward', _task_emb.get_device(), _task_emb.size())
-            _task_emb = _task_emb.squeeze(1)
+            # _task_emb = _task_emb.squeeze(1)
+            assert _task_emb.size(0) == _input.size(0)
             _out = self.MLP(_task_emb)
             # if self.normalize:
             #     denom = _out.abs().sum(dim=1, keepdim=True)
@@ -52,8 +53,9 @@ class FiLM_Layer(nn.Module):
             #     # print(_task_emb[:2,10:20])
             #     # print(mu[:2,:10])
             #     # print(sigma[:2,:5])
-            self._out = _out.unsqueeze(1)
-            _out = self._out.expand(-1, n_expand, -1).reshape(-1, self._out.size(-1))
+            # self._out = _out.unsqueeze(1)
+            # _out = self._out.expand(-1, n_expand, -1).reshape(-1, self._out.size(-1))
+            # self._out =
 
             mu, sigma = torch.split(
                 _out, [self.channels, self.channels], dim=-1)

@@ -1,5 +1,5 @@
 from backbone import ResNet12, ResNet18, WRN, ConvNet
-from backbone_film import ResNet12_FiLM_Encoder
+from backbone_film import ResNet12_FiLM, get_task_embedding_func
 from dpgn import DPGN
 from utils_film import set_logging_config, adjust_learning_rate, save_checkpoint, allocate_tensors, preprocessing, \
     initialize_nodes_edges, backbone_two_stage_initialization, one_hot_encode
@@ -16,7 +16,7 @@ import imp
 
 
 class DPGNTrainer(object):
-    def __init__(self, enc_module, gnn_module, data_loader, log, arg, config, best_step):
+    def __init__(self, enc_module, gnn_module, te_module, data_loader, log, arg, config, best_step):
         """
         The Trainer of DPGN model
         :param enc_module: backbone network (Conv4, ResNet12, ResNet18, WRN)
@@ -41,6 +41,7 @@ class DPGNTrainer(object):
         # set backbone and DPGN
         self.enc_module = enc_module.to(arg.device)
         self.gnn_module = gnn_module.to(arg.device)
+        self.te_module = te_module.to(arg.device)
 
         # set logger
         self.log = log
@@ -99,15 +100,27 @@ class DPGNTrainer(object):
                     self.train_opt['num_ways'],
                     self.arg.device
                 )
+            n_support = support_data.size(1)
+            assert n_support in [5, 25]
 
             # set as train mode
             self.enc_module.train()
             self.gnn_module.train()
+            self.te_module.train()
             
-            # use backbone encode image
+            # use backbone encode image - first pass without task_embedding
+            # with torch.no_grad():
             last_layer_data, second_last_layer_data = backbone_two_stage_initialization(
-                all_data, support_label, self.enc_module,
-                num_gpu=self.arg.num_gpu, film=True)
+                all_data, support_label, self.enc_module, task_embedding=None)
+            support_last_layer = last_layer_data[:n_support]
+            support_second_last_layer = second_last_layer_data[:n_support]
+            support_features = torch.cat([support_last_layer, support_second_last_layer], dim=-1)
+            task_embedding = self.te_module(
+                support_features, support_label,
+                self.train_opt['num_ways'], self.train_opt['num_shots'], 0.0
+            )
+            last_layer_data, second_last_layer_data = backbone_two_stage_initialization(
+                all_data, support_label, self.enc_module, task_embedding)
 
             # run the DPGN model
             point_similarity, node_similarity_l2, distribution_similarities = \
@@ -202,10 +215,23 @@ class DPGNTrainer(object):
             # set as eval mode
             self.enc_module.eval()
             self.gnn_module.eval()
+            self.te_module.eval()
+            n_support = support_data.size(1)
 
+            # last_layer_data, second_last_layer_data = backbone_two_stage_initialization(
+            #     all_data, support_label, self.enc_module,
+            #     num_gpu=self.arg.num_gpu, film=True)
             last_layer_data, second_last_layer_data = backbone_two_stage_initialization(
-                all_data, support_label, self.enc_module,
-                num_gpu=self.arg.num_gpu, film=True)
+                all_data, support_label, self.enc_module, task_embedding=None)
+            support_last_layer = last_layer_data[:n_support]
+            support_second_last_layer = second_last_layer_data[:n_support]
+            support_features = torch.cat([support_last_layer, support_second_last_layer], dim=-1)
+            task_embedding = self.te_module(
+                support_features, support_label,
+                self.train_opt['num_ways'], self.train_opt['num_shots'], 0.0
+            )
+            last_layer_data, second_last_layer_data = backbone_two_stage_initialization(
+                all_data, support_label, self.enc_module, task_embedding)
 
             # run the DPGN model
             point_similarity, _, _ = self.gnn_module(second_last_layer_data,
@@ -494,7 +520,7 @@ def main():
         enc_module = ResNet12(emb_size=config['emb_size'], cifar_flag=cifar_flag)
         print('Backbone: ResNet12')
     if config['backbone'] == 'resnet12_film':
-        enc_module = ResNet12_FiLM_Encoder(
+        enc_module = ResNet12_FiLM(
             emb_size=config['emb_size'],
             cifar_flag=cifar_flag,
             film_indim=config['emb_size'] * 2,
@@ -524,6 +550,8 @@ def main():
                       config['point_distance_metric'],
                       config['distribution_distance_metric'])
 
+    te_module = get_task_embedding_func()
+
     # multi-gpu configuration
     [print('GPU: {}  Spec: {}'.format(i, torch.cuda.get_device_name(i))) for i in range(args_opt.num_gpu)]
 
@@ -531,6 +559,7 @@ def main():
         print('Construct multi-gpu model ...')
         enc_module = nn.DataParallel(enc_module, device_ids=range(args_opt.num_gpu), dim=0)
         gnn_module = nn.DataParallel(gnn_module, device_ids=range(args_opt.num_gpu), dim=0)
+        te_module = nn.DataParallel(te_module, device_ids=range(args_opt.num_gpu), dim=0)
         print('done!\n')
 
     if not os.path.exists(os.path.join(args_opt.checkpoint_dir, args_opt.exp_name)):
