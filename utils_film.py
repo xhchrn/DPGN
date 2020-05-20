@@ -212,6 +212,7 @@ def backbone_two_stage_initialization(full_data, encoder,
     # # second_last_layer_data: (batch_size, num_samples, embedding dimension)
     # second_last_layer_data = torch.cat(second_last_layer_data_temp, dim=0)
 
+    task_embedding = task_embedding.squeeze(1) if task_embedding is not None else None
     for data in full_data.chunk(full_data.size(1), dim=1):
         # the encode step
         encoded_result = encoder(data.squeeze(1),
