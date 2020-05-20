@@ -25,7 +25,7 @@ train_opt['loss_indicator'] = [1, 1, 1]
 eval_opt = OrderedDict()
 eval_opt['num_ways'] = 5
 eval_opt['num_shots'] = 5
-eval_opt['batch_size'] = 10
+eval_opt['batch_size'] = 8
 eval_opt['iteration'] = 1000
 eval_opt['interval'] = 1000
 
