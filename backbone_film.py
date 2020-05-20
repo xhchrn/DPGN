@@ -316,10 +316,10 @@ class ResNet12_FiLM_Encoder(nn.Module):
         query_data = x[n_support:]
 
         # first pass without task embedding
-        # with torch.no_grad():
-        support_encode = self.resnet12(support_data, None, None)
-        support_encode = torch.cat(support_encode, dim=1)
-        # support_encode = support_encode.detach().requires_grad_()
+        with torch.no_grad():
+            support_encode = self.resnet12(support_data, None, None)
+            support_encode = torch.cat(support_encode, dim=1)
+        support_encode = support_encode.detach().requires_grad_()
         emb_task, _ = self.add_te_func(
             support_encode.unsqueeze(0), support_label.unsqueeze(0),
             n_way, n_shot, 0.0
