@@ -435,6 +435,9 @@ def main():
     parser.add_argument('--mode', type=str, default='train',
                         help='train or eval')
 
+    parser.add_argument('--load-naive', type=str, default=None,
+                        help='Load model from naive backbone')
+
     args_opt = parser.parse_args()
 
     config_file = args_opt.config
