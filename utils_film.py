@@ -216,7 +216,7 @@ def backbone_two_stage_initialization(full_data, encoder,
     for data in full_data.chunk(full_data.size(1), dim=1):
         # the encode step
         encoded_result = encoder(data.squeeze(1),
-                                 task_embedding=task_embedding.squeeze(1),
+                                 task_embedding=task_embedding,
                                  n_expand=1)
         # prepare for two stage initialization of DPGN
         last_layer_data_temp.append(encoded_result[0])
