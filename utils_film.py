@@ -1,6 +1,7 @@
 import os
 import logging
 import torch
+import torch.nn as nn
 import shutil
 from backbone_film import ResNet12_FiLM_Encoder
 
@@ -221,5 +222,20 @@ def backbone_two_stage_initialization(full_data, support_label, encoder,
     return last_layer_data, second_last_layer_data
 
 
+def load_from_naive_backbone(tgt_model, src_model):
+    # Conv
+    tgt_convs = [m for m in tgt_model.modules() if isinstance(m, nn.Conv2d)]
+    src_convs = [m for m in src_model.modules() if isinstance(m, nn.Conv2d)]
+    assert len(tgt_convs) == len(src_convs)
+    for tgt, src in zip(tgt_convs, src_convs):
+        assert tgt.weight.size() == src.weight.size()
+        tgt.load_state_dict(src.state_dict())
+    # DualBN - DualBN.BN_none should copy from naive backbone
+    from dual_bn import DualBN2d
+    tgt_bns = [m for m in tgt_model.modules() if isinstance(m, DualBN2d)]
+    src_bns = [m for m in src_model.modules() if isinstance(m, nn.BatchNorm2d)]
+    for tgt, src in zip(tgt_bns, src_bns):
+        tgt.BN_none.load_state_dict(src.state_dict())
+        # tgt.BN_task.load_state_dict(src.state_dict())
 
 

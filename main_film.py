@@ -1,8 +1,9 @@
 from backbone import ResNet12, ResNet18, WRN, ConvNet
 from backbone_film import ResNet12_FiLM_Encoder
 from dpgn import DPGN
-from utils_film import set_logging_config, adjust_learning_rate, save_checkpoint, allocate_tensors, preprocessing, \
-    initialize_nodes_edges, backbone_two_stage_initialization, one_hot_encode
+from utils_film import set_logging_config, adjust_learning_rate, save_checkpoint, \
+    allocate_tensors, preprocessing, initialize_nodes_edges, \
+    backbone_two_stage_initialization, one_hot_encode, load_from_naive_backbone
 from dataloader import MiniImagenet, TieredImagenet, Cifar, CUB200, DataLoader
 import torch
 import torch.nn as nn
@@ -533,12 +534,24 @@ def main():
         gnn_module = nn.DataParallel(gnn_module, device_ids=range(args_opt.num_gpu), dim=0)
         print('done!\n')
 
-    if not os.path.exists(os.path.join(args_opt.checkpoint_dir, args_opt.exp_name)):
+    if args_opt.load_naive is not None:
+        naive_enc_module = ResNet12(emb_size=config['emb_size'], cifar_flag=cifar_flag)
+        if args_opt.num_gpu > 1:
+            naive_enc_module = nn.DataParallel(naive_enc_module,
+                                               device_ids=range(args_opt.num_gpu),
+                                               dim=0)
+            naive_checkpoint = torch.load(args_opt.load_naive)
+            naive_enc_module.load_state_dict(naive_checkpoint['enc_module_state_dict'])
+            load_from_naive_backbone(enc_module.module.resnet12, naive_enc_module)
+            del naive_enc_module
+
+    elif not os.path.exists(os.path.join(args_opt.checkpoint_dir, args_opt.exp_name)):
         os.makedirs(os.path.join(args_opt.checkpoint_dir, args_opt.exp_name))
         logger.info('no checkpoint for model: {}, make a new one at {}'.format(
             args_opt.exp_name,
             os.path.join(args_opt.checkpoint_dir, args_opt.exp_name)))
         best_step = 0
+
     else:
         if not os.path.exists(os.path.join(args_opt.checkpoint_dir, args_opt.exp_name, 'model_best.pth.tar')):
             best_step = 0
