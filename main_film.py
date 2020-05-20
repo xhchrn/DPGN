@@ -545,8 +545,10 @@ def main():
                                                dim=0)
             naive_checkpoint = torch.load(args_opt.load_naive)
             naive_enc_module.load_state_dict(naive_checkpoint['enc_module_state_dict'])
+            logger.info('best naive checkpoint loaded from {}'.format(args_opt.load_naive))
             load_from_naive_backbone(enc_module.module.resnet12, naive_enc_module)
             del naive_enc_module
+        best_step = 0
 
     elif not os.path.exists(os.path.join(args_opt.checkpoint_dir, args_opt.exp_name)):
         os.makedirs(os.path.join(args_opt.checkpoint_dir, args_opt.exp_name))
