@@ -111,7 +111,7 @@ class DPGNTrainer(object):
             # use backbone encode image - first pass without task_embedding
             # with torch.no_grad():
             last_layer_data, second_last_layer_data = backbone_two_stage_initialization(
-                all_data, support_label, self.enc_module, task_embedding=None)
+                all_data, self.enc_module, task_embedding=None)
             support_last_layer = last_layer_data[:n_support]
             support_second_last_layer = second_last_layer_data[:n_support]
             support_features = torch.cat([support_last_layer, support_second_last_layer], dim=-1)
@@ -120,7 +120,7 @@ class DPGNTrainer(object):
                 self.train_opt['num_ways'], self.train_opt['num_shots'], 0.0
             )
             last_layer_data, second_last_layer_data = backbone_two_stage_initialization(
-                all_data, support_label, self.enc_module, task_embedding)
+                all_data, self.enc_module, task_embedding)
 
             # run the DPGN model
             point_similarity, node_similarity_l2, distribution_similarities = \
@@ -223,7 +223,7 @@ class DPGNTrainer(object):
             #     all_data, support_label, self.enc_module,
             #     num_gpu=self.arg.num_gpu, film=True)
             last_layer_data, second_last_layer_data = backbone_two_stage_initialization(
-                all_data, support_label, self.enc_module, task_embedding=None)
+                all_data, self.enc_module, task_embedding=None)
             support_last_layer = last_layer_data[:n_support]
             support_second_last_layer = second_last_layer_data[:n_support]
             support_features = torch.cat([support_last_layer, support_second_last_layer], dim=-1)
@@ -232,7 +232,7 @@ class DPGNTrainer(object):
                 self.train_opt['num_ways'], self.train_opt['num_shots'], 0.0
             )
             last_layer_data, second_last_layer_data = backbone_two_stage_initialization(
-                all_data, support_label, self.enc_module, task_embedding)
+                all_data, self.enc_module, task_embedding)
 
             # run the DPGN model
             point_similarity, _, _ = self.gnn_module(second_last_layer_data,
