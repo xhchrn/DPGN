@@ -4,6 +4,7 @@ from dpgn import DPGN
 from utils_film import set_logging_config, adjust_learning_rate, save_checkpoint, \
     allocate_tensors, preprocessing, initialize_nodes_edges, \
     backbone_two_stage_initialization, one_hot_encode, load_from_naive_backbone
+from dual_bn import DualBN2d
 from dataloader import MiniImagenet, TieredImagenet, Cifar, CUB200, DataLoader
 import torch
 import torch.nn as nn
@@ -49,8 +50,20 @@ class DPGNTrainer(object):
         # get data loader
         self.data_loader = data_loader
 
+        if arg.fix_naive:
+            from dual_bn import DualBN2d
+            from film import FiLM_Layer
+            enc_module_params = []
+            for m in self.enc_module.modules():
+                if isinstance(m, DualBN2d):
+                    enc_module_params += list(m.BN_task.parameters())
+                if isinstance(m, FiLM_Layer):
+                    enc_module_params += list(m.parameters())
+        else:
+            enc_module_params = list(self.enc_module.parameters())
+
         # set parameters
-        self.module_params = list(self.enc_module.parameters()) + list(self.gnn_module.parameters())
+        self.module_params = enc_module_params + list(self.gnn_module.parameters())
 
         # set optimizer
         self.optimizer = optim.Adam(
@@ -104,6 +117,10 @@ class DPGNTrainer(object):
             # set as train mode
             self.enc_module.train()
             self.gnn_module.train()
+            if self.arg.fix_naive:
+                for m in self.enc_module.modules():
+                    if isinstance(m, DualBN2d):
+                        m.BN_none.eval()
             
             # use backbone encode image
             last_layer_data, second_last_layer_data = backbone_two_stage_initialization(
@@ -437,6 +454,9 @@ def main():
 
     parser.add_argument('--load-naive', type=str, default=None,
                         help='Load model from naive backbone')
+
+    parser.add_argument('--fix-naive', action='store_true',
+                        help='Fix naive backbone')
 
     args_opt = parser.parse_args()
 
